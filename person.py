@@ -11,12 +11,17 @@ connection_string = (
 
 
 class PersonService:
-    cursor: Cursor = None
 
-    def __init__(self, cursor: Cursor):
+    def __init__(self, cursor: Cursor, job_service):
         self.cursor = cursor
+        self.job_service = job_service
 
     def save_person(self, person):
+
+        job = self.job_service.get_job_by_name(person["jobName"])
+        if not job:
+            job = self.job_service.save_job(person["jobName"])
+
         self.cursor.execute("{CALL sp_savePerson(?, ?, ?, ?, ?, ?, ?, ?, ?)}",
                             (person["firstname"],
                              person["surname"],
@@ -25,7 +30,7 @@ class PersonService:
                              person["ahvNumber"],
                              person["personalNumber"],
                              person["phoneNumber"],
-                             person["jobId"],
+                             job["id"],
                              person["departementId"])
                             )
         self.cursor.commit()
@@ -40,6 +45,7 @@ class PersonService:
                             "PHONE_NUMBER, "
                             "JOB_ID, "
                             "DEPARTEMENT_ID FROM Person")
+
         rows = self.cursor.fetchall()
         peopleDicts = []
         for row in rows:
