@@ -1,19 +1,13 @@
 from http.server import BaseHTTPRequestHandler
 import json
-from urllib.parse import parse_qs, urlparse
 
 
-def CustomHandlerFactory(person_service, job_service):
-
+def CustomHandlerFactory(person_service):
     class CustomHandler(BaseHTTPRequestHandler):
 
         def do_GET(self):
             if self.path == '/people':
                 self.do_People()
-            if self.path.__contains__('/job'):
-                self.do_Job()
-            # if self.path.__contains__('/company'):
-            #     self.do_Company()
 
         def do_POST(self):
             if self.path == '/person':
@@ -37,13 +31,5 @@ def CustomHandlerFactory(person_service, job_service):
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps(peopleDict).encode(encoding='utf_8'))
-
-        def do_Job(self):
-            id = parse_qs(urlparse(self.path).query)["id"]
-            jobDict = job_service.get_job(id)
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(jobDict).encode(encoding='utf_8'))
 
     return CustomHandler

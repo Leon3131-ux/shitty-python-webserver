@@ -1,26 +1,35 @@
 from pyodbc import Cursor
 
-connection_string = (
-    'DRIVER=MySQL ODBC 8.0 ANSI Driver;'
-    'SERVER=localhost;'
-    'DATABASE=m151;'
-    'UID=root;'
-    'PWD=root;'
-    'charset=utf8mb4;'
-)
+from company import CompanyService
+from department import DepartmentService
+from job import JobService
 
 
 class PersonService:
 
-    def __init__(self, cursor: Cursor, job_service):
+    def __init__(self, cursor: Cursor,
+                 job_service: JobService,
+                 company_service: CompanyService,
+                 department_service: DepartmentService):
         self.cursor = cursor
         self.job_service = job_service
+        self.company_service = company_service
+        self.department_service = department_service
 
     def save_person(self, person):
 
         job = self.job_service.get_job_by_name(person["jobName"])
+        company = self.company_service.get_company_by_name(person["companyName"])
+        department = self.department_service.get_department_by_name(person["departmentName"], person["companyName"])
         if not job:
             job = self.job_service.save_job(person["jobName"])
+
+        if not company:
+            company = self.company_service.save_company(person["companyName"])
+            department = self.department_service.save_department(person["departmentName"], company["id"], company["name"])
+        else:
+            if not department:
+                department = self.department_service.save_department(person["departmentName"], company["id"], company["name"])
 
         self.cursor.execute("{CALL sp_savePerson(?, ?, ?, ?, ?, ?, ?, ?, ?)}",
                             (person["firstname"],
@@ -31,37 +40,28 @@ class PersonService:
                              person["personalNumber"],
                              person["phoneNumber"],
                              job["id"],
-                             person["departementId"])
+                             department["id"])
                             )
         self.cursor.commit()
 
     def get_people(self):
-        self.cursor.execute("SELECT FIRSTNAME, "
-                            "SURNAME, "
-                            "BIRTHDATE, "
-                            "EMAIL, "
-                            "AHV_NUMBER, "
-                            "PERSONAL_NUMBER, "
-                            "PHONE_NUMBER, "
-                            "JOB_ID, "
-                            "DEPARTEMENT_ID FROM Person")
+        rows = self.cursor.execute("{CALL sp_getPeople()}")
 
-        rows = self.cursor.fetchall()
         peopleDicts = []
         for row in rows:
             print(row)
             person = {
-                "firsname": row.FIRSTNAME,
+                "firstname": row.FIRSTNAME,
                 "surname": row.SURNAME,
                 "birthdate": row.BIRTHDATE.strftime('%m/%d/%Y'),
                 "email": row.EMAIL,
                 "ahvNumber": row.AHV_NUMBER,
                 "personalNumber": row.PERSONAL_NUMBER,
                 "phoneNumber": row.PHONE_NUMBER,
-                "jobId": row.JOB_ID,
-                "departementId": row.DEPARTEMENT_ID
+                "jobName": row.JOB_NAME,
+                "departmentName": row.DEPARTMENT_NAME,
+                "companyName": row.COMPANY_NAME
             }
             peopleDicts.append(person)
 
         return peopleDicts
-
