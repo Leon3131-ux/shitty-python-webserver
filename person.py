@@ -26,21 +26,26 @@ class PersonService:
 
         if not company:
             company = self.company_service.save_company(person["companyName"])
-            department = self.department_service.save_department(person["departmentName"], company["id"], company["name"])
+            department = self.department_service.save_department(person["departmentName"], company["id"],
+                                                                 company["name"])
         else:
             if not department:
-                department = self.department_service.save_department(person["departmentName"], company["id"], company["name"])
+                department = self.department_service.save_department(person["departmentName"], company["id"],
+                                                                     company["name"])
 
-        self.cursor.execute("{CALL sp_savePerson(?, ?, ?, ?, ?, ?, ?, ?, ?)}",
-                            (person["firstname"],
-                             person["surname"],
-                             person["birthdate"],
-                             person["email"],
-                             person["ahvNumber"],
-                             person["personalNumber"],
-                             person["phoneNumber"],
-                             job["id"],
-                             department["id"])
+        self.cursor.execute("{CALL sp_savePerson(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}",
+                            (
+                                person["id"],
+                                person["firstname"],
+                                person["surname"],
+                                person["birthdate"],
+                                person["email"],
+                                person["ahvNumber"],
+                                person["personalNumber"],
+                                person["phoneNumber"],
+                                job["id"],
+                                department["id"]
+                            )
                             )
         self.cursor.commit()
 
@@ -51,6 +56,7 @@ class PersonService:
         for row in rows:
             print(row)
             person = {
+                "id": row.ID,
                 "firstname": row.FIRSTNAME,
                 "surname": row.SURNAME,
                 "birthdate": row.BIRTHDATE.strftime('%m/%d/%Y'),
@@ -65,3 +71,7 @@ class PersonService:
             peopleDicts.append(person)
 
         return peopleDicts
+
+    def delete_person(self, person_id):
+        self.cursor.execute("{CALL sp_deletePerson(?)}", person_id)
+        self.cursor.commit()
