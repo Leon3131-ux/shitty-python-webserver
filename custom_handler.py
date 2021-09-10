@@ -27,11 +27,11 @@ def CustomHandlerFactory(person_service):
             self.end_headers()
 
         def do_People(self):
-            peopleDict = person_service.get_people()
+            people_dict = person_service.get_people()
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            self.wfile.write(json.dumps(peopleDict).encode(encoding='utf_8'))
+            self.wfile.write(json.dumps(people_dict).encode(encoding='utf_8'))
 
     return CustomHandler
